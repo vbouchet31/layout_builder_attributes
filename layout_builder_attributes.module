@@ -1,0 +1,297 @@
+<?php
+
+/**
+ * @file
+ * Provides hook implementations for Layout Builder Attributes.
+ */
+
+use Symfony\Component\Yaml\Yaml;
+
+/**
+ * Implements template_preprocess_layout().
+ */
+function layout_builder_attributes_preprocess_layout(&$variables) {
+  if (!isset($variables['settings']['section_attributes'])) {
+    return;
+  }
+
+  // The cache is automatically invalidated when the layout is updated. Only
+  // tag to add is the config which can be updated and impact the plugins
+  // used in the layout.
+  $variables['#cache']['tags'][] = 'config:layout_builder_attributes.settings';
+
+  foreach (['class', 'id', 'style', 'data'] as $attribute) {
+    if (empty($variables['settings']['section_attributes'][$attribute])) {
+      continue;
+    }
+
+    // Because we don't clean up existing layout configurations when enabled
+    // plugins are updated, we do it at rendering time.
+    $applicable_plugins = \Drupal::service('plugin.manager.layout_builder_attributes')->getApplicablePlugins([
+      'element' => 'section',
+      'attribute' => $attribute,
+    ], TRUE, FALSE);
+
+    foreach ($variables['settings']['section_attributes'][$attribute] as $plugin_id => $plugin_configuration) {
+      // If the plugin is configured but is not enabled, we skip the rendering.
+      if (!in_array($plugin_id, array_keys($applicable_plugins))) {
+        continue;
+      }
+
+      $instance = \Drupal::service('plugin.manager.layout_builder_attributes')->createInstance(
+        $plugin_id,
+        $plugin_configuration
+      );
+
+      $result = $instance->render();
+      if (empty($result)) {
+        continue;
+      }
+
+      switch($attribute) {
+        case 'class':
+          $classes = explode(' ', $result);
+          $existing_classes = $variables['attributes']['class'] ?? [];
+          $variables['attributes']['class'] = array_merge($existing_classes, $classes);
+          break;
+
+        case 'id':
+          $variables['attributes']['id'] = $result;
+          break;
+
+        case 'style':
+          $variables['attributes']['style'] = trim(($variables['attributes']['style'] ?? '') . ' ' . $result);
+          break;
+
+        case 'data':
+          $data_attributes = preg_split('/\R/', $result);
+          foreach ($data_attributes as $data_attribute) {
+            $data_attribute = explode('|', $data_attribute);
+            // Values are optional for data-* attributes.
+            $variables['attributes']['custom_data_attributes'][$data_attribute[0]] = $data_attribute[1] ?? TRUE;
+          }
+          break;
+      }
+    }
+  }
+
+  if (!empty($variables['region_attributes']) && !empty($variables['settings']['region_attributes'])) {
+    // Looping through the region attributes because its presence means the
+    // region has content, and its absence means we can skip it.
+    foreach ($variables['region_attributes'] as $region_name => $region_attributes) {
+      if (empty($variables['settings']['region_attributes'][$region_name])) {
+        continue;
+      }
+
+      foreach (['class', 'id', 'style', 'data'] as $attribute) {
+        if (empty($variables['settings']['region_attributes'][$region_name][$attribute])) {
+          continue;
+        }
+
+        // Because we don't clean up existing layout configurations when enabled
+        // plugins are updated, we do it at rendering time.
+        $applicable_plugins = \Drupal::service('plugin.manager.layout_builder_attributes')->getApplicablePlugins([
+          'element' => 'region',
+          'attribute' => $attribute,
+        ], TRUE, FALSE);
+
+        foreach ($variables['settings']['region_attributes'][$region_name][$attribute] as $plugin_id => $plugin_configuration) {
+          // If the plugin is configured but is not enabled, we skip the rendering.
+          if (!in_array($plugin_id, array_keys($applicable_plugins))) {
+            continue;
+          }
+
+          $instance = \Drupal::service('plugin.manager.layout_builder_attributes')->createInstance(
+            $plugin_id,
+            $plugin_configuration
+          );
+
+          $result = $instance->render();
+          if (empty($result)) {
+            continue;
+          }
+
+          switch($attribute) {
+            case 'class':
+              $region_attributes->addClass($result);
+              break;
+
+            case 'id':
+              $region_attributes->setAttribute('id', $result);
+              break;
+
+            case 'style':
+              $region_attributes->setAttribute('style', $result);
+              break;
+
+            case 'data':
+              $data_attributes = preg_split('/\R/', $result);
+              foreach ($data_attributes as $data_attribute) {
+                $data_attribute = explode('|', $data_attribute);
+                // Values are optional for data-* attributes.
+                $region_attributes->setAttribute($data_attribute[0], $data_attribute[1] ?? TRUE);
+              }
+
+              break;
+          }
+        }
+      }
+
+    }
+  }
+}
+
+/**
+ * Implements template_preprocess_block().
+ */
+function layout_builder_attributes_preprocess_block(&$variables) {
+  if (!isset($variables['elements']['#component_attributes'])) {
+    return;
+  }
+
+  $variables['#cache']['tags'][] = 'config:layout_builder_attributes.settings';
+
+  $config = [
+    'component_outer' => ['class', 'id', 'style', 'data'],
+    'component_title' => ['class', 'id', 'style', 'data'],
+    'component_inner' => ['class', 'id', 'style', 'data']
+  ];
+
+  foreach ($config as $element => $attributes) {
+    if (empty($variables['elements']['#component_attributes'][$element])) {
+      continue;
+    }
+
+    $key = 'attributes';
+    switch($element) {
+      case 'component_title':
+        $key = 'title_attributes';
+        break;
+
+      case 'component_inner':
+        $key = 'content_attributes';
+        break;
+    }
+
+    foreach ($attributes as $attribute) {
+      if (empty($variables['elements']['#component_attributes'][$element][$attribute])) {
+        continue;
+      }
+
+      // Because we don't clean up existing layout configurations when enabled
+      // plugins are updated, we do it at rendering time.
+      $applicable_plugins = \Drupal::service('plugin.manager.layout_builder_attributes')->getApplicablePlugins([
+        'element' => $element,
+        'attribute' => $attribute,
+      ], TRUE, FALSE);
+
+      foreach ($variables['elements']['#component_attributes'][$element][$attribute] as $plugin_id => $plugin_configuration) {
+        // If the plugin is configured but is not enabled,
+        // we skip the rendering.
+        if (!in_array($plugin_id, array_keys($applicable_plugins))) {
+          continue;
+        }
+
+        $instance = \Drupal::service('plugin.manager.layout_builder_attributes')->createInstance(
+          $plugin_id,
+          $plugin_configuration
+        );
+
+        $result = $instance->render();
+        if (empty($result)) {
+          continue;
+        }
+
+        switch($attribute) {
+          case 'class':
+            $classes = explode(' ', $result);
+            $existing_classes = $variables[$key]['class'] ?? [];
+            $variables[$key]['class'] = array_merge($existing_classes, $classes);
+            break;
+
+          case 'id':
+            $variables[$key]['id'] = $result;
+            break;
+
+          case 'style':
+            $variables[$key]['style'] = trim(($variables[$key]['style'] ?? '') . ' ' . $result);
+            break;
+
+          case 'data':
+            $data_attributes = preg_split('/\R/', $result);
+            foreach ($data_attributes as $data_attribute) {
+              $data_attribute = explode('|', $data_attribute);
+              // Values are optional for data-* attributes.
+              $variables[$key][$data_attribute[0]] = $data_attribute[1] ?? TRUE;
+            }
+            break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_contextual_links_alter().
+ */
+function layout_builder_attributes_contextual_links_alter(array &$links, $group, array $route_parameters) {
+  if (!in_array($group, ['layout_builder_block', 'layout_builder_section'])) {
+    return;
+  }
+
+  $type = $group === 'layout_builder_block' ? 'block' : 'section';
+  if (isset($links['layout_builder_attributes_' . $type])) {
+    // Prepare the list of elements to check applicable plugins.
+    $elements = $type === 'block' ? ['component_outer', 'component_title', 'component_inner'] : ['section', 'region'];
+
+    $data = $route_parameters;
+    foreach ($elements as $element) {
+      $data['element'] = $element;
+
+      $plugins = \Drupal::service('plugin.manager.layout_builder_attributes')->getApplicablePlugins($data);
+
+      // If there is applicable plugins for the given element, no need to
+      // check the next elements as we already need to display the contextual
+      // links.
+      if (!empty($plugins)) {
+        break;
+      }
+    }
+
+    // If there is no plugin applicable for this context, drop the contextual
+    // link.
+    if (empty($plugins)) {
+      unset($links['layout_builder_attributes_' . $type]);
+      return;
+    }
+
+    // Link weights are not respected, so a glorified array splice is used
+    // instead. The 'Manage attributes' link should be inserted immediately
+    // after the 'Configure' link.
+    $insert_array['layout_builder_attributes_' . $type] = $links['layout_builder_attributes_' . $type];
+    unset($links['layout_builder_attributes_' . $type]);
+    $array_keys = array_flip(array_keys($links));
+    $update_pos = $array_keys['layout_builder_' . $type . '_update'];
+
+    $links = array_slice($links, 0, $update_pos + 1, TRUE) + $insert_array + array_slice($links, $update_pos + 1, NULL, TRUE);
+  }
+}
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function layout_builder_attributes_element_info_alter(array &$info) {
+  // Integrate with https://www.drupal.org/project/drupal/issues/3344037.
+  // If the "Remove" and "Configure" links are contextual links, we don't do
+  // the pre_render operation as our custom "Configure attributes" link will
+  // be already a contextual link.
+  $layout_builder_contextual_links = Yaml::parseFile(DRUPAL_ROOT . '/core/modules/layout_builder/layout_builder.links.contextual.yml');
+  if (isset($layout_builder_contextual_links['layout_builder_section_update'])
+    && isset($layout_builder_contextual_links['layout_builder_section_remove'])) {
+    return;
+  }
+
+  // Add a pre_render function to the layout_builder element to add our custom
+  // "Configure attributes" link to sections.
+  $info['layout_builder']['#pre_render'][] = 'layout_builder_attributes.element:preRenderLayoutBuilder';
+}

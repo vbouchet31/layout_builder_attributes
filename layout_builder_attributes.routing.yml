@@ -1,0 +1,52 @@
+layout_builder_attributes.configuration:
+  path: '/admin/config/content/layout-builder-attributes'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Layout Builder Attributes'
+  requirements:
+    _permission: 'administer layout builder attributes'
+
+layout_builder_attributes.plugin_settings:
+  path: '/admin/config/content/layout-builder-attributes/plugins-settings'
+  defaults:
+    _form: '\Drupal\layout_builder_attributes\Form\PluginsSettingsForm'
+    _title: 'Configure enabled plugins'
+  requirements:
+    _permission: 'administer layout builder attributes'
+
+layout_builder_attributes.display_settings:
+  path: '/admin/config/content/layout-builder-attributes/display-settings'
+  defaults:
+    _form: '\Drupal\layout_builder_attributes\Form\DisplaySettingsForm'
+    _title: 'Configure labels displayed to editors'
+  requirements:
+    _permission: 'administer layout builder attributes'
+
+layout_builder_attributes.manage_component_attributes:
+  path: '/layout_builder/update/block-attributes/{section_storage_type}/{section_storage}/{delta}/{uuid}'
+  defaults:
+    _form: '\Drupal\layout_builder_attributes\Form\ManageComponentAttributesForm'
+    _title: 'Manage attributes'
+  requirements:
+    _permission: 'manage layout builder component attributes'
+    _layout_builder_access: 'view'
+  options:
+    _admin_route: TRUE
+    parameters:
+      section_storage:
+        layout_builder_tempstore: TRUE
+
+layout_builder_attributes.manage_section_attributes:
+  path: '/layout_builder/update/section-attributes/{section_storage_type}/{section_storage}/{delta}/{plugin_id}'
+  defaults:
+    _title: 'Manage attributes'
+    _form: '\Drupal\layout_builder_attributes\Form\ManageSectionAttributesForm'
+    plugin_id: null
+  requirements:
+    _permission: 'manage layout builder section attributes'
+    _layout_builder_access: 'view'
+  options:
+    _admin_route: TRUE
+    parameters:
+      section_storage:
+        layout_builder_tempstore: TRUE

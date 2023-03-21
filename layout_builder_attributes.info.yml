@@ -1,0 +1,8 @@
+name: 'Layout Builder Attributes'
+description: 'Allows editors to add HTML attributes to Layout Builder sections, regions and components (blocks)'
+package: 'Layout Builder'
+core_version_requirement: ^9 || ^10
+type: module
+
+dependencies:
+  - drupal:layout_builder

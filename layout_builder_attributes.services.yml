@@ -1,0 +1,14 @@
+services:
+  plugin.manager.layout_builder_attributes:
+    class: Drupal\layout_builder_attributes\LayoutBuilderAttributePluginManager
+    arguments: ['@container.namespaces', '@cache.discovery', '@module_handler', '@config.factory']
+
+  layout_builder_attributes.section_component_build_render_array_subscriber:
+    class: Drupal\layout_builder_attributes\EventSubscriber\LayoutBuilderComponentRenderArray
+    arguments: []
+    tags:
+      - { name: event_subscriber }
+
+  layout_builder_attributes.element:
+    class: Drupal\layout_builder_attributes\Element
+    arguments: ['@current_user']

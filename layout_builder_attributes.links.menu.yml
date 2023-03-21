@@ -1,0 +1,17 @@
+layout_builder_attributes.configuration:
+  title: 'Layout Builder Attributes'
+  description: 'Manage Layout Builder attributes plugins and labels.'
+  parent: system.admin_config_content
+  route_name: layout_builder_attributes.configuration
+
+layout_builder_attributes.plugin_settings:
+  title: Enabled plugins
+  route_name: layout_builder_attributes.plugin_settings
+  parent: layout_builder_attributes.configuration
+  description: 'Configure plugins that can be used.'
+
+layout_builder_attributes.display_settings:
+  title: Customize display
+  route_name: layout_builder_attributes.display_settings
+  parent: layout_builder_attributes.configuration
+  description: 'Configure the links, forms and labels.'

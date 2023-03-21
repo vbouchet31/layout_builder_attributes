@@ -1,0 +1,9 @@
+administer layout builder attributes:
+  title: 'Administer Layout Builder Attributes'
+  description: 'Manage global settings for the Layout Builder Attributes module'
+manage layout builder component attributes:
+  title: 'Manage Layout Builder component attributes'
+  description: 'Add attributes to Layout Builder components (blocks)'
+manage layout builder section attributes:
+  title: 'Manage Layout Builder section attributes'
+  description: 'Add attributes to Layout Builder sections'
